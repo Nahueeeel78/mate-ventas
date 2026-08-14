@@ -28,6 +28,7 @@ let currentProduct = null;
 let selectedVariantId = null;
 let adminOpen = false;
 let mpAlias = "";
+let waNumber = "+54 9 11 7036-1019";
 
 /* ---------- Utilidades ---------- */
 const fmt = n => "$" + Number(n).toLocaleString("es-AR");
@@ -46,6 +47,10 @@ function toast(msg){
   t.classList.add("show");
   clearTimeout(toast._t);
   toast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+function waLink(message){
+  const digits = waNumber.replace(/\D/g, "");
+  return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 function resizeImageFile(file, maxSize = 900, quality = 0.75){
   return new Promise((resolve) => {
@@ -85,6 +90,11 @@ async function seedIfEmpty(){
   });
   await batch.commit();
 }
+async function bootstrapConfig(){
+  const snap = await getDoc(configDoc);
+  if(snap.exists() && snap.data().waNumber) return;
+  await setDoc(configDoc, { waNumber: "+54 9 11 7036-1019" }, { merge: true });
+}
 
 /* ---------- Suscripciones en tiempo real ---------- */
 onSnapshot(productsCol, snap => {
@@ -103,10 +113,14 @@ onSnapshot(reservasCol, snap => {
   if(adminOpen) renderAdminReservas();
 });
 onSnapshot(configDoc, snap => {
-  mpAlias = snap.exists() ? (snap.data().mpAlias || "") : "";
+  const data = snap.exists() ? snap.data() : {};
+  mpAlias = data.mpAlias || "";
+  waNumber = data.waNumber || "+54 9 11 7036-1019";
   if(currentProduct && $("#overlay-product").classList.contains("show")) renderProductSheet();
   const aliasInput = $("#admin-mpalias-input");
   if(aliasInput && document.activeElement !== aliasInput) aliasInput.value = mpAlias;
+  const waInput = $("#admin-wa-input");
+  if(waInput && document.activeElement !== waInput) waInput.value = waNumber;
 });
 
 /* ---------- Render catálogo ---------- */
@@ -205,6 +219,7 @@ function renderProductSheet(){
     </div>` : `
     <div class="alert-nostock">⚠ La dueña todavía no cargó su alias de Mercado Pago</div>
     `}
+    <button type="button" class="btn btn-secondary" id="btn-whatsapp">📲 Enviar nombre y comprobante por WhatsApp</button>
     <div class="btn-row">
       <button class="btn btn-secondary" id="btn-borrador">Guardar borrador</button>
       <button class="btn btn-primary" id="btn-reservar">Reservar</button>
@@ -219,6 +234,12 @@ function renderProductSheet(){
     $("#qty-plus").onclick = () => { qty++; qtyVal.textContent=qty; };
     $("#btn-borrador").onclick = () => submitReservation("borrador", () => qty);
     $("#btn-reservar").onclick = () => submitReservation("confirmada", () => qty);
+    $("#btn-whatsapp").onclick = () => {
+      const name = $("#res-name").value.trim() || "(sin nombre)";
+      const variant = currentProduct.variants.find(v => v.id === selectedVariantId);
+      const msg = `Hola! Quiero reservar: ${currentProduct.title} - ${variant.label} x${qty}. Mi nombre: ${name}. Te mando el comprobante de pago.`;
+      window.open(waLink(msg), "_blank");
+    };
   }
 }
 function renderVariantChips(){
@@ -309,6 +330,15 @@ function renderAdmin(){
     </div>
 
     <div class="admin-section">
+      <h3>Tu WhatsApp</h3>
+      <div class="field">
+        <label>A este número te van a escribir con nombre y comprobante</label>
+        <input id="admin-wa-input" type="text" placeholder="+54 9 11 1234-5678" value="${waNumber}">
+      </div>
+      <button class="btn btn-secondary" id="admin-wa-save">Guardar WhatsApp</button>
+    </div>
+
+    <div class="admin-section">
       <h3>Agregar producto nuevo</h3>
       <div class="field"><label>Título</label><input id="np-title" type="text" placeholder="Ej: Termo 1L negro"></div>
       <div class="field"><label>Precio</label><input id="np-price" type="number" placeholder="Ej: 30000"></div>
@@ -339,6 +369,16 @@ function renderAdmin(){
     try{
       await setDoc(configDoc, { mpAlias: val }, { merge: true });
       toast("Alias guardado");
+    }catch(err){
+      console.error(err);
+      toast("No se pudo guardar. Revisá tu conexión.");
+    }
+  };
+  $("#admin-wa-save").onclick = async () => {
+    const val = $("#admin-wa-input").value.trim();
+    try{
+      await setDoc(configDoc, { waNumber: val }, { merge: true });
+      toast("WhatsApp guardado");
     }catch(err){
       console.error(err);
       toast("No se pudo guardar. Revisá tu conexión.");
@@ -449,6 +489,7 @@ async function createProductFromForm(){
 
 /* ---------- Init ---------- */
 seedIfEmpty();
+bootstrapConfig();
 $("#btn-admin").onclick = openAdmin;
 $("#overlay-product").onclick = e => { if(e.target.id === "overlay-product") closeProductSheet(); };
 $("#overlay-admin").onclick = e => { if(e.target.id === "overlay-admin") closeAdmin(); };
