@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mate & Co. — Ventas y Reservas</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#233E30">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Splash -->
+<div id="splash">
+  <img src="icons/icon-512.png" alt="Logo">
+  <div class="brand">Mate & Co.</div>
+  <div class="tagline">Ventas · Reservas</div>
+</div>
+
+<header class="top">
+  <div class="row">
+    <div class="brand-wrap">
+      <img src="icons/icon-192.png" alt="Logo">
+      <div>
+        <div class="brand">Mate & Co.</div>
+        <div class="sub">Catálogo de ventas</div>
+      </div>
+    </div>
+    <button class="icon-btn" id="btn-admin">⚙ Panel</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>Desarrollado por <b>Nahualejandro</b></footer>
+
+<!-- Modal producto -->
+<div class="overlay" id="overlay-product">
+  <div class="sheet" id="sheet-product"></div>
+</div>
+
+<!-- Modal admin -->
+<div class="overlay" id="overlay-admin">
+  <div class="sheet" id="sheet-admin"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
