@@ -159,6 +159,13 @@ main{padding:14px 16px 90px;max-width:640px;margin:0 auto;}
 .btn-row .btn{flex:1;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
 
+.mp-info{
+  background:var(--cream);border:1.5px dashed var(--gold);border-radius:10px;
+  padding:10px 12px;margin-bottom:4px;display:flex;flex-direction:column;gap:3px;
+}
+.mp-info span{font-size:.76rem;color:var(--ink-soft);}
+.mp-info strong{font-family:'IBM Plex Mono',monospace;color:var(--green-deep);font-size:1rem;}
+
 .alert-nostock{
   background:#f6e4e2;border:1px solid var(--rust);color:var(--rust);
   padding:10px 12px;border-radius:10px;font-size:.85rem;font-weight:600;text-align:center;margin-top:10px;

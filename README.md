@@ -16,8 +16,9 @@ App web simple (sin instalación) para mostrar el catálogo de productos, marcar
 
 - **Catálogo**: tarjetas con foto, título, precio y variantes/colores. Si un color ya está reservado se ve tachado con ✕.
 - **Sin Stock automático**: cuando TODAS las variantes de un producto quedan reservadas, aparece solo el sello "SIN STOCK" — no hay que hacer nada a mano.
-- **Reservar**: el comprador elige color, cantidad, pone su nombre y su alias de Mercado Pago. Puede guardar como **borrador** (no bloquea el color, por si se arrepiente) o **confirmar la reserva** (ahí sí queda marcada con ✕).
-- **Panel de la dueña** (ícono ⚙ arriba a la derecha): pide un PIN de 4 dígitos (se crea la primera vez que se usa, en ese mismo celular/navegador). Desde ahí se puede:
+- **Reservar**: el comprador elige color, cantidad y pone su nombre. La app le muestra el alias de Mercado Pago de la dueña para que transfiera y avise el pago — el comprador no carga ningún alias propio. Puede guardar como **borrador** (no bloquea el color, por si se arrepiente) o **confirmar la reserva** (ahí sí queda marcada con ✕).
+- **Panel de la dueña** (ícono ⚙ arriba a la derecha): pide un PIN de 4 dígitos (se crea la primera vez que se usa, y ya queda compartido para cualquier celular que entre al panel). Desde ahí se puede:
+  - Cargar o editar el alias de Mercado Pago propio, que van a ver todos los que reserven.
   - Agregar productos nuevos (foto, título, precio, categoría, variantes separadas por coma, si es kit).
   - Marcar o liberar manualmente cada variante como reservada.
   - Ver todas las reservas (borrador/confirmada), confirmar un borrador o eliminarlo.

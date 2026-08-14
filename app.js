@@ -27,6 +27,7 @@ let activeCategory = "Todos";
 let currentProduct = null;
 let selectedVariantId = null;
 let adminOpen = false;
+let mpAlias = "";
 
 /* ---------- Utilidades ---------- */
 const fmt = n => "$" + Number(n).toLocaleString("es-AR");
@@ -100,6 +101,12 @@ onSnapshot(reservasCol, snap => {
   reservas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
   if(adminOpen) renderAdminReservas();
+});
+onSnapshot(configDoc, snap => {
+  mpAlias = snap.exists() ? (snap.data().mpAlias || "") : "";
+  if(currentProduct && $("#overlay-product").classList.contains("show")) renderProductSheet();
+  const aliasInput = $("#admin-mpalias-input");
+  if(aliasInput && document.activeElement !== aliasInput) aliasInput.value = mpAlias;
 });
 
 /* ---------- Render catálogo ---------- */
@@ -191,10 +198,13 @@ function renderProductSheet(){
       <label>Tu nombre</label>
       <input id="res-name" type="text" placeholder="Nombre y apellido">
     </div>
-    <div class="field">
-      <label>Alias de Mercado Pago</label>
-      <input id="res-alias" type="text" placeholder="tu.alias.mp">
-    </div>
+    ${mpAlias ? `
+    <div class="mp-info">
+      <span>Transferí a este alias de Mercado Pago y avisá tu pago:</span>
+      <strong>${mpAlias}</strong>
+    </div>` : `
+    <div class="alert-nostock">⚠ La dueña todavía no cargó su alias de Mercado Pago</div>
+    `}
     <div class="btn-row">
       <button class="btn btn-secondary" id="btn-borrador">Guardar borrador</button>
       <button class="btn btn-primary" id="btn-reservar">Reservar</button>
@@ -228,9 +238,8 @@ function renderVariantChips(){
 }
 async function submitReservation(status, getQty){
   const name = $("#res-name") ? $("#res-name").value.trim() : "";
-  const alias = $("#res-alias") ? $("#res-alias").value.trim() : "";
-  if(!name || !alias){
-    toast("Completá nombre y alias de Mercado Pago");
+  if(!name){
+    toast("Completá tu nombre");
     return;
   }
   const variant = currentProduct.variants.find(v => v.id === selectedVariantId);
@@ -240,7 +249,7 @@ async function submitReservation(status, getQty){
     variantId: variant.id,
     variantLabel: variant.label,
     qty: getQty(),
-    name, alias,
+    name,
     status,
     createdAt: new Date().toISOString()
   };
@@ -273,7 +282,7 @@ async function openAdmin(){
   if(!pin){
     const setPin = prompt("Primera vez: creá un PIN de 4 dígitos para administrar la app");
     if(!setPin) return;
-    await setDoc(configDoc, { pin: setPin });
+    await setDoc(configDoc, { pin: setPin }, { merge: true });
     pin = setPin;
     toast("PIN creado. Guardalo bien.");
   }
@@ -290,6 +299,15 @@ function renderAdmin(){
   wrap.innerHTML = `
     <div class="drag"></div>
     <h2>Panel de la dueña</h2>
+    <div class="admin-section">
+      <h3>Tu alias de Mercado Pago</h3>
+      <div class="field">
+        <label>Los compradores van a ver este alias para transferirte</label>
+        <input id="admin-mpalias-input" type="text" placeholder="tu.alias.mp" value="${mpAlias}">
+      </div>
+      <button class="btn btn-secondary" id="admin-mpalias-save">Guardar alias</button>
+    </div>
+
     <div class="admin-section">
       <h3>Agregar producto nuevo</h3>
       <div class="field"><label>Título</label><input id="np-title" type="text" placeholder="Ej: Termo 1L negro"></div>
@@ -316,6 +334,16 @@ function renderAdmin(){
     </div>
   `;
   $("#np-save").onclick = createProductFromForm;
+  $("#admin-mpalias-save").onclick = async () => {
+    const val = $("#admin-mpalias-input").value.trim();
+    try{
+      await setDoc(configDoc, { mpAlias: val }, { merge: true });
+      toast("Alias guardado");
+    }catch(err){
+      console.error(err);
+      toast("No se pudo guardar. Revisá tu conexión.");
+    }
+  };
   renderAdminProducts();
   renderAdminReservas();
 }
@@ -368,7 +396,6 @@ function renderAdminReservas(){
         <span class="status ${r.status}">${r.status}</span>
       </div>
       <div class="detail">${r.productTitle} — ${r.variantLabel} × ${r.qty}</div>
-      <div class="detail">Alias MP: ${r.alias}</div>
       <div class="actions">
         ${r.status === "borrador" ? `<button data-confirm="${r.id}">Confirmar</button>` : ""}
         <button data-del="${r.id}">Eliminar</button>
