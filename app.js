@@ -31,6 +31,7 @@ let mpAlias = "";
 let waNumber = "+54 9 11 7036-1019";
 let cart = [];
 let cartName = "";
+let viewMode = localStorage.getItem("mate_view_mode") || "grid";
 
 /* ---------- Utilidades ---------- */
 const fmt = n => "$" + Number(n).toLocaleString("es-AR");
@@ -153,6 +154,7 @@ function renderTabs(){
 function renderGrid(){
   const grid = $("#grid");
   const list = products.filter(p => activeCategory === "Todos" || p.category === activeCategory);
+  grid.className = "grid" + (viewMode !== "grid" ? ` ${viewMode}-view` : "");
   grid.innerHTML = "";
   if(list.length === 0){
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
@@ -175,11 +177,18 @@ function renderGrid(){
       <div class="info">
         <div class="title">${p.title}</div>
         <div class="variants-left">${p.variants.length > 1 ? p.variants.length + ' colores/variantes' : ''}</div>
+        ${viewMode === "details" && p.desc ? `<div class="desc-preview">${p.desc}</div>` : ''}
         <div class="price">${fmt(p.price)}</div>
       </div>`;
     card.onclick = () => openProduct(p.id);
     grid.appendChild(card);
   });
+}
+function setViewMode(mode){
+  viewMode = mode;
+  localStorage.setItem("mate_view_mode", mode);
+  $$(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === mode));
+  renderGrid();
 }
 
 /* ---------- Modal producto / reserva ---------- */
@@ -612,3 +621,7 @@ $("#btn-cart").onclick = openCart;
 $("#overlay-product").onclick = e => { if(e.target.id === "overlay-product") closeProductSheet(); };
 $("#overlay-admin").onclick = e => { if(e.target.id === "overlay-admin") closeAdmin(); };
 $("#overlay-cart").onclick = e => { if(e.target.id === "overlay-cart") closeCart(); };
+$$(".view-btn").forEach(b => {
+  b.classList.toggle("active", b.dataset.view === viewMode);
+  b.onclick = () => setViewMode(b.dataset.view);
+});
