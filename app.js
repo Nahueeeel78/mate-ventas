@@ -629,3 +629,25 @@ $("#btn-wa-float").onclick = e => {
   e.preventDefault();
   window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
 };
+$("#footer-wa").onclick = e => {
+  e.preventDefault();
+  window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
+};
+
+/* ---------- Acceso oculto al panel: tocar el logo 5 veces ---------- */
+const ADMIN_REVEAL_KEY = "mate_admin_revealed";
+if(localStorage.getItem(ADMIN_REVEAL_KEY) === "1"){
+  $("#btn-admin").style.display = "";
+}
+let logoTaps = 0, logoTapTimer = null;
+$("#brand-wrap").addEventListener("click", () => {
+  logoTaps++;
+  clearTimeout(logoTapTimer);
+  logoTapTimer = setTimeout(() => { logoTaps = 0; }, 2500);
+  if(logoTaps >= 5){
+    logoTaps = 0;
+    localStorage.setItem(ADMIN_REVEAL_KEY, "1");
+    $("#btn-admin").style.display = "";
+    toast("Panel de administración habilitado en este celular");
+  }
+});

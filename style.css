@@ -253,6 +253,16 @@ footer{
   font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;
 }
 footer b{color:var(--green-deep);}
+.social-row{
+  display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;
+}
+.social-icon{
+  width:38px;height:38px;border-radius:50%;border:1px solid var(--green-line);
+  display:flex;align-items:center;justify-content:center;color:var(--green-deep);
+  background:var(--paper);text-decoration:none;
+}
+.social-icon:active{ transform:scale(.94); }
+.social-handle{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--ink-soft);}
 
 .toast{
   position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(10px);
