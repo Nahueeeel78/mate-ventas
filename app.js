@@ -32,6 +32,23 @@ let waNumber = "+54 9 11 7036-1019";
 let cart = [];
 let cartName = "";
 let viewMode = localStorage.getItem("mate_view_mode") || "grid";
+let theme = localStorage.getItem("mate_theme") || "clasico";
+let buyerId = localStorage.getItem("mate_buyer_id") || (() => {
+  const id = "b" + Date.now() + Math.random().toString(36).slice(2,8);
+  localStorage.setItem("mate_buyer_id", id);
+  return id;
+})();
+let buyerName = localStorage.getItem("mate_buyer_name") || "";
+let buyerLastName = localStorage.getItem("mate_buyer_lastname") || "";
+let cartReceiptFile = null;
+
+const THEMES = [
+  { id: "clasico",   name: "Clásico",   colors: ["#233E30", "#C9A227", "#F7F3EA"] },
+  { id: "terracota", name: "Terracota", colors: ["#7A3626", "#E0A45C", "#FBF1EA"] },
+  { id: "celeste",   name: "Celeste",   colors: ["#1F4A5C", "#8FBFCB", "#EEF5F7"] },
+  { id: "noche",     name: "Noche",     colors: ["#20242A", "#C9A227", "#7FA98E"] },
+  { id: "salvia",    name: "Salvia",    colors: ["#4B5D3A", "#C9A227", "#F1F3EC"] },
+];
 
 /* ---------- Utilidades ---------- */
 const fmt = n => "$" + Number(n).toLocaleString("es-AR");
@@ -123,6 +140,7 @@ onSnapshot(reservasCol, snap => {
   reservas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
   if(adminOpen) renderAdminReservas();
+  if($("#overlay-profile").classList.contains("show")) renderProfile();
 });
 onSnapshot(configDoc, snap => {
   const data = snap.exists() ? snap.data() : {};
@@ -189,6 +207,101 @@ function setViewMode(mode){
   localStorage.setItem("mate_view_mode", mode);
   $$(".view-btn").forEach(b => b.classList.toggle("active", b.dataset.view === mode));
   renderGrid();
+}
+
+/* ---------- Temas visuales ---------- */
+function applyTheme(id){
+  theme = id;
+  localStorage.setItem("mate_theme", id);
+  document.body.className = id === "clasico" ? "" : `theme-${id}`;
+}
+function openThemeSheet(){
+  renderThemeSheet();
+  $("#overlay-theme").classList.add("show");
+}
+function closeThemeSheet(){ $("#overlay-theme").classList.remove("show"); }
+function renderThemeSheet(){
+  const wrap = $("#sheet-theme");
+  wrap.innerHTML = `
+    <div class="drag"></div>
+    <h2>Elegí un tema</h2>
+    <div class="desc">Cambia los colores de toda la app, en el momento.</div>
+    <div class="theme-grid" id="theme-grid"></div>
+  `;
+  const grid = $("#theme-grid");
+  THEMES.forEach(t => {
+    const card = document.createElement("div");
+    card.className = "theme-card" + (theme === t.id ? " selected" : "");
+    card.innerHTML = `
+      <div class="theme-swatches">
+        ${t.colors.map(c => `<span class="theme-swatch" style="background:${c}"></span>`).join("")}
+      </div>
+      <span class="theme-name">${t.name}</span>
+    `;
+    card.onclick = () => {
+      applyTheme(t.id);
+      renderThemeSheet();
+      toast(`Tema "${t.name}" aplicado`);
+    };
+    grid.appendChild(card);
+  });
+}
+
+/* ---------- Perfil del comprador ---------- */
+function openProfile(){
+  renderProfile();
+  $("#overlay-profile").classList.add("show");
+}
+function closeProfile(){ $("#overlay-profile").classList.remove("show"); }
+function renderProfile(){
+  const wrap = $("#sheet-profile");
+  const mine = reservas.filter(r => r.buyerId === buyerId);
+  wrap.innerHTML = `
+    <div class="drag"></div>
+    <h2>Mi perfil</h2>
+    <div class="field">
+      <label>Nombre</label>
+      <input id="profile-name" type="text" placeholder="Nombre" value="${buyerName}">
+    </div>
+    <div class="field">
+      <label>Apellido</label>
+      <input id="profile-lastname" type="text" placeholder="Apellido" value="${buyerLastName}">
+    </div>
+    <button class="btn btn-secondary" id="profile-save">Guardar datos</button>
+
+    <div class="admin-section" style="margin-top:18px;">
+      <h3>Historial de compras (${mine.length})</h3>
+      <div id="profile-history"></div>
+    </div>
+  `;
+  const hist = $("#profile-history");
+  if(mine.length === 0){
+    hist.innerHTML = `<div class="empty-state" style="padding:20px 0;">Todavía no hiciste ninguna reserva.</div>`;
+  } else {
+    mine.forEach(r => {
+      const card = document.createElement("div");
+      card.className = "res-card";
+      const itemsHtml = (r.items || []).map(i => `${i.productTitle} — ${i.variantLabel} × ${i.qty}`).join("<br>");
+      const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString("es-AR") : "";
+      card.innerHTML = `
+        <div class="top-row">
+          <span class="who">${date}</span>
+          <span class="status ${r.status}">${r.status}</span>
+        </div>
+        <div class="detail">${itemsHtml}</div>
+        <div class="detail" style="font-weight:600;color:var(--rust)">Total: ${fmt(r.total || 0)}</div>
+        ${r.receipt ? `<img class="receipt-thumb" src="${r.receipt}" alt="Comprobante">` : `<div class="detail">Sin comprobante</div>`}
+      `;
+      hist.appendChild(card);
+    });
+  }
+  $("#profile-save").onclick = () => {
+    buyerName = $("#profile-name").value.trim();
+    buyerLastName = $("#profile-lastname").value.trim();
+    localStorage.setItem("mate_buyer_name", buyerName);
+    localStorage.setItem("mate_buyer_lastname", buyerLastName);
+    toast("Datos guardados");
+  };
 }
 
 /* ---------- Modal producto / reserva ---------- */
@@ -273,6 +386,10 @@ async function checkoutCart(status){
   const name = $("#cart-name") ? $("#cart-name").value.trim() : "";
   if(!name){ toast("Completá tu nombre"); return; }
   if(cart.length === 0){ toast("El carrito está vacío"); return; }
+  if(status === "confirmada" && !cartReceiptFile){
+    toast("Subí el comprobante de la transferencia para reservar");
+    return;
+  }
 
   // Revalidar stock en vivo antes de confirmar (por si alguien reservó mientras tanto)
   if(status === "confirmada"){
@@ -291,6 +408,17 @@ async function checkoutCart(status){
     }
   }
 
+  const btnConfirm = $("#btn-cart-reservar");
+  const btnDraft = $("#btn-cart-borrador");
+  if(btnConfirm) btnConfirm.disabled = true;
+  if(btnDraft) btnDraft.disabled = true;
+
+  let receiptData = null;
+  if(cartReceiptFile){
+    try{ receiptData = await resizeImageFile(cartReceiptFile, 1000, 0.7); }
+    catch(err){ console.error(err); }
+  }
+
   const items = cart.map(i => ({
     productId: i.productId, productTitle: i.productTitle,
     variantId: i.variantId, variantLabel: i.variantLabel,
@@ -298,8 +426,9 @@ async function checkoutCart(status){
   }));
   const reserva = {
     name, items, total: cartTotal(), status,
-    createdAt: new Date().toISOString()
+    buyerId, createdAt: new Date().toISOString()
   };
+  if(receiptData) reserva.receipt = receiptData;
   try{
     await addDoc(reservasCol, reserva);
     if(status === "confirmada"){
@@ -309,9 +438,10 @@ async function checkoutCart(status){
     }
     const lines = cart.map(i => `- ${i.productTitle} (${i.variantLabel}) x${i.qty} — ${fmt(i.qty*i.price)}`).join("\n");
     const msg = status === "confirmada"
-      ? `Hola! Soy ${name}. RESERVADO:\n${lines}\nTotal: ${fmt(cartTotal())}\nYa está reservado, ahora te transfiero.`
+      ? `Hola! Soy ${name}. RESERVADO:\n${lines}\nTotal: ${fmt(cartTotal())}\nYa está reservado y adjunté el comprobante en la app.`
       : `Hola! Soy ${name}. Quiero consultar por:\n${lines}\nTotal: ${fmt(cartTotal())}`;
     cart = [];
+    cartReceiptFile = null;
     updateCartBadge();
     closeCart();
     toast(status === "confirmada" ? "¡Reservado! Se abre WhatsApp para avisar." : "Guardado como borrador");
@@ -319,6 +449,9 @@ async function checkoutCart(status){
   }catch(err){
     console.error(err);
     toast("No se pudo guardar. Revisá tu conexión.");
+  }finally{
+    if(btnConfirm) btnConfirm.disabled = false;
+    if(btnDraft) btnDraft.disabled = false;
   }
 }
 async function setVariantReserved(productId, variantId, reserved){
@@ -330,6 +463,8 @@ async function setVariantReserved(productId, variantId, reserved){
 
 /* ---------- Carrito ---------- */
 function openCart(){
+  cartReceiptFile = null;
+  if(!cartName && (buyerName || buyerLastName)) cartName = `${buyerName} ${buyerLastName}`.trim();
   renderCart();
   $("#overlay-cart").classList.add("show");
 }
@@ -367,6 +502,10 @@ function renderCart(){
     </div>` : `
     <div class="alert-nostock">⚠ La dueña todavía no cargó su alias de Mercado Pago</div>
     `}
+    <div class="field">
+      <label>Comprobante de la transferencia (obligatorio para reservar)</label>
+      <input id="cart-receipt" type="file" accept="image/*">
+    </div>
     <div class="btn-row">
       <button class="btn btn-secondary" id="btn-cart-borrador">Guardar borrador</button>
       <button class="btn btn-primary" id="btn-cart-reservar">Reservar todo</button>
@@ -407,6 +546,7 @@ function renderCart(){
     updateCartBadge(); renderCart();
   });
   $("#cart-name").oninput = e => cartName = e.target.value;
+  $("#cart-receipt").onchange = e => { cartReceiptFile = e.target.files[0] || null; };
   $("#btn-cart-borrador").onclick = () => checkoutCart("borrador");
   $("#btn-cart-reservar").onclick = () => checkoutCart("confirmada");
 }
@@ -552,6 +692,7 @@ function renderAdminReservas(){
       ? r.items.map(i => `${i.productTitle} — ${i.variantLabel} × ${i.qty}`).join("<br>")
       : `${r.productTitle} — ${r.variantLabel} × ${r.qty}`;
     const totalHtml = r.total ? `<div class="detail" style="font-weight:600;color:var(--rust)">Total: ${fmt(r.total)}</div>` : "";
+    const receiptHtml = r.receipt ? `<img class="receipt-thumb" src="${r.receipt}" alt="Comprobante">` : "";
     card.innerHTML = `
       <div class="top-row">
         <span class="who">${r.name}</span>
@@ -559,6 +700,7 @@ function renderAdminReservas(){
       </div>
       <div class="detail">${itemsHtml}</div>
       ${totalHtml}
+      ${receiptHtml}
       <div class="actions">
         ${r.status === "borrador" ? `<button data-confirm="${r.id}">Confirmar</button>` : ""}
         <button data-del="${r.id}">Eliminar</button>
@@ -616,11 +758,16 @@ async function createProductFromForm(){
 /* ---------- Init ---------- */
 seedIfEmpty();
 bootstrapConfig();
+applyTheme(theme);
 $("#btn-admin").onclick = openAdmin;
 $("#btn-cart").onclick = openCart;
+$("#btn-theme").onclick = openThemeSheet;
+$("#btn-profile").onclick = openProfile;
 $("#overlay-product").onclick = e => { if(e.target.id === "overlay-product") closeProductSheet(); };
 $("#overlay-admin").onclick = e => { if(e.target.id === "overlay-admin") closeAdmin(); };
 $("#overlay-cart").onclick = e => { if(e.target.id === "overlay-cart") closeCart(); };
+$("#overlay-theme").onclick = e => { if(e.target.id === "overlay-theme") closeThemeSheet(); };
+$("#overlay-profile").onclick = e => { if(e.target.id === "overlay-profile") closeProfile(); };
 $$(".view-btn").forEach(b => {
   b.classList.toggle("active", b.dataset.view === viewMode);
   b.onclick = () => setViewMode(b.dataset.view);
@@ -634,20 +781,12 @@ $("#footer-wa").onclick = e => {
   window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
 };
 
-/* ---------- Acceso oculto al panel: tocar el logo 5 veces ---------- */
+/* ---------- Acceso al panel: solo por link privado de la dueña ---------- */
 const ADMIN_REVEAL_KEY = "mate_admin_revealed";
+const urlParams = new URLSearchParams(window.location.search);
+if(urlParams.get("admin") === "1"){
+  localStorage.setItem(ADMIN_REVEAL_KEY, "1");
+}
 if(localStorage.getItem(ADMIN_REVEAL_KEY) === "1"){
   $("#btn-admin").style.display = "";
 }
-let logoTaps = 0, logoTapTimer = null;
-$("#brand-wrap").addEventListener("click", () => {
-  logoTaps++;
-  clearTimeout(logoTapTimer);
-  logoTapTimer = setTimeout(() => { logoTaps = 0; }, 2500);
-  if(logoTaps >= 5){
-    logoTaps = 0;
-    localStorage.setItem(ADMIN_REVEAL_KEY, "1");
-    $("#btn-admin").style.display = "";
-    toast("Panel de administración habilitado en este celular");
-  }
-});
