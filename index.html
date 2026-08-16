@@ -27,6 +27,7 @@
         <div class="sub">Catálogo de ventas</div>
       </div>
     </div>
+    <button class="icon-btn" id="btn-cart">🛒<span id="cart-badge" class="cart-badge" style="display:none">0</span></button>
     <button class="icon-btn" id="btn-admin">⚙ Panel</button>
   </div>
   <div class="tabs" id="tabs"></div>
@@ -46,6 +47,11 @@
 <!-- Modal admin -->
 <div class="overlay" id="overlay-admin">
   <div class="sheet" id="sheet-admin"></div>
+</div>
+
+<!-- Modal carrito -->
+<div class="overlay" id="overlay-cart">
+  <div class="sheet" id="sheet-cart"></div>
 </div>
 
 <div class="toast" id="toast"></div>

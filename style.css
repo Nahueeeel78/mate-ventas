@@ -57,9 +57,14 @@ header.top .brand{font-size:1.15rem;font-weight:700;}
 header.top .sub{font-size:.68rem;color:var(--gold);font-family:'IBM Plex Mono',monospace;letter-spacing:.06em;text-transform:uppercase;margin-top:1px;}
 .icon-btn{
   background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18);color:var(--cream);
-  border-radius:12px;padding:8px 10px;font-size:.85rem;cursor:pointer;
+  border-radius:12px;padding:8px 10px;font-size:.85rem;cursor:pointer;position:relative;
 }
 .icon-btn:active{transform:scale(.96);}
+.cart-badge{
+  position:absolute;top:-6px;right:-6px;background:var(--rust);color:#fff;
+  font-family:'IBM Plex Mono',monospace;font-size:.62rem;font-weight:600;
+  min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;
+}
 
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 4px;scrollbar-width:none;}
 .tabs::-webkit-scrollbar{display:none;}
@@ -170,6 +175,26 @@ main{padding:14px 16px 90px;max-width:640px;margin:0 auto;}
   background:#f6e4e2;border:1px solid var(--rust);color:var(--rust);
   padding:10px 12px;border-radius:10px;font-size:.85rem;font-weight:600;text-align:center;margin-top:10px;
 }
+
+/* ---------- Carrito ---------- */
+.cart-item{
+  display:flex;gap:10px;align-items:center;background:var(--cream);border-radius:12px;padding:8px;margin-bottom:8px;
+}
+.cart-item img{width:48px;height:48px;border-radius:8px;object-fit:cover;flex:0 0 auto;}
+.cart-item .meta{flex:1;min-width:0;}
+.cart-item .meta .t{font-size:.82rem;font-weight:600;line-height:1.2;}
+.cart-item .meta .v{font-size:.72rem;color:var(--ink-soft);}
+.cart-item .meta .sub{font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--rust);margin-top:2px;}
+.cart-item .cart-qty{display:flex;align-items:center;gap:6px;}
+.cart-item .cart-qty button{width:26px;height:26px;border-radius:7px;border:1px solid var(--green-line);background:var(--paper);font-size:.9rem;}
+.cart-item .cart-qty span{font-family:'IBM Plex Mono',monospace;font-size:.85rem;min-width:16px;text-align:center;}
+.cart-item .cart-remove{border:none;background:none;color:var(--rust);font-size:1rem;padding:2px 4px;cursor:pointer;}
+.cart-total-row{
+  display:flex;justify-content:space-between;align-items:baseline;padding:12px 2px;
+  border-top:1.5px dashed var(--green-line);margin-top:6px;
+}
+.cart-total-row .label{font-weight:600;color:var(--green-deep);}
+.cart-total-row .amount{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--rust);}
 
 /* ---------- Admin ---------- */
 .admin-section{margin-bottom:18px;}

@@ -29,6 +29,8 @@ let selectedVariantId = null;
 let adminOpen = false;
 let mpAlias = "";
 let waNumber = "+54 9 11 7036-1019";
+let cart = [];
+let cartName = "";
 
 /* ---------- Utilidades ---------- */
 const fmt = n => "$" + Number(n).toLocaleString("es-AR");
@@ -51,6 +53,14 @@ function toast(msg){
 function waLink(message){
   const digits = waNumber.replace(/\D/g, "");
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+}
+function cartCount(){ return cart.reduce((s,i)=>s+i.qty,0); }
+function cartTotal(){ return cart.reduce((s,i)=>s+i.qty*i.price,0); }
+function updateCartBadge(){
+  const badge = $("#cart-badge");
+  const n = cartCount();
+  badge.textContent = n;
+  badge.style.display = n > 0 ? "flex" : "none";
 }
 function resizeImageFile(file, maxSize = 900, quality = 0.75){
   return new Promise((resolve) => {
@@ -106,6 +116,7 @@ onSnapshot(productsCol, snap => {
     const updated = products.find(p => p.id === currentProduct.id);
     if(updated){ currentProduct = updated; if($("#overlay-product").classList.contains("show")) renderProductSheet(); }
   }
+  if($("#overlay-cart").classList.contains("show")) renderCart();
 });
 onSnapshot(reservasCol, snap => {
   reservas = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -208,22 +219,7 @@ function renderProductSheet(){
         <button type="button" id="qty-plus">+</button>
       </div>
     </div>
-    <div class="field">
-      <label>Tu nombre</label>
-      <input id="res-name" type="text" placeholder="Nombre y apellido">
-    </div>
-    ${mpAlias ? `
-    <div class="mp-info">
-      <span>Transferí a este alias de Mercado Pago y avisá tu pago:</span>
-      <strong>${mpAlias}</strong>
-    </div>` : `
-    <div class="alert-nostock">⚠ La dueña todavía no cargó su alias de Mercado Pago</div>
-    `}
-    <button type="button" class="btn btn-secondary" id="btn-whatsapp">📲 Enviar nombre y comprobante por WhatsApp</button>
-    <div class="btn-row">
-      <button class="btn btn-secondary" id="btn-borrador">Guardar borrador</button>
-      <button class="btn btn-primary" id="btn-reservar">Reservar</button>
-    </div>
+    <button type="button" class="btn btn-primary" id="btn-add-cart">Agregar al carrito</button>
     `}
   `;
   if(p.variants.length > 1) renderVariantChips();
@@ -232,13 +228,20 @@ function renderProductSheet(){
     const qtyVal = $("#qty-val");
     $("#qty-minus").onclick = () => { if(qty>1){qty--; qtyVal.textContent=qty;} };
     $("#qty-plus").onclick = () => { qty++; qtyVal.textContent=qty; };
-    $("#btn-borrador").onclick = () => submitReservation("borrador", () => qty);
-    $("#btn-reservar").onclick = () => submitReservation("confirmada", () => qty);
-    $("#btn-whatsapp").onclick = () => {
-      const name = $("#res-name").value.trim() || "(sin nombre)";
+    $("#btn-add-cart").onclick = () => {
       const variant = currentProduct.variants.find(v => v.id === selectedVariantId);
-      const msg = `Hola! Quiero reservar: ${currentProduct.title} - ${variant.label} x${qty}. Mi nombre: ${name}. Te mando el comprobante de pago.`;
-      window.open(waLink(msg), "_blank");
+      const existing = cart.find(i => i.productId === currentProduct.id && i.variantId === variant.id);
+      if(existing){ existing.qty += qty; }
+      else{
+        cart.push({
+          productId: currentProduct.id, productTitle: currentProduct.title,
+          variantId: variant.id, variantLabel: variant.label,
+          price: currentProduct.price, img: currentProduct.img, qty
+        });
+      }
+      updateCartBadge();
+      toast(`Agregado al carrito (${cartCount()})`);
+      closeProductSheet();
     };
   }
 }
@@ -257,30 +260,53 @@ function renderVariantChips(){
     wrap.appendChild(chip);
   });
 }
-async function submitReservation(status, getQty){
-  const name = $("#res-name") ? $("#res-name").value.trim() : "";
-  if(!name){
-    toast("Completá tu nombre");
-    return;
+async function checkoutCart(status){
+  const name = $("#cart-name") ? $("#cart-name").value.trim() : "";
+  if(!name){ toast("Completá tu nombre"); return; }
+  if(cart.length === 0){ toast("El carrito está vacío"); return; }
+
+  // Revalidar stock en vivo antes de confirmar (por si alguien reservó mientras tanto)
+  if(status === "confirmada"){
+    const blocked = [];
+    for(const item of cart){
+      const prod = products.find(p => p.id === item.productId);
+      const v = prod && prod.variants.find(v => v.id === item.variantId);
+      if(!v || v.reserved) blocked.push(item);
+    }
+    if(blocked.length){
+      cart = cart.filter(i => !blocked.includes(i));
+      updateCartBadge();
+      renderCart();
+      toast(`${blocked[0].variantLabel} ya fue reservado por otra persona, lo saqué del carrito`);
+      return;
+    }
   }
-  const variant = currentProduct.variants.find(v => v.id === selectedVariantId);
+
+  const items = cart.map(i => ({
+    productId: i.productId, productTitle: i.productTitle,
+    variantId: i.variantId, variantLabel: i.variantLabel,
+    qty: i.qty, price: i.price
+  }));
   const reserva = {
-    productId: currentProduct.id,
-    productTitle: currentProduct.title,
-    variantId: variant.id,
-    variantLabel: variant.label,
-    qty: getQty(),
-    name,
-    status,
+    name, items, total: cartTotal(), status,
     createdAt: new Date().toISOString()
   };
   try{
     await addDoc(reservasCol, reserva);
     if(status === "confirmada"){
-      await setVariantReserved(currentProduct.id, variant.id, true);
+      for(const item of cart){
+        await setVariantReserved(item.productId, item.variantId, true);
+      }
     }
-    closeProductSheet();
-    toast(status === "confirmada" ? "¡Reserva confirmada! Avisá el pago por MP." : "Guardado como borrador");
+    const lines = cart.map(i => `- ${i.productTitle} (${i.variantLabel}) x${i.qty} — ${fmt(i.qty*i.price)}`).join("\n");
+    const msg = status === "confirmada"
+      ? `Hola! Soy ${name}. RESERVADO:\n${lines}\nTotal: ${fmt(cartTotal())}\nYa está reservado, ahora te transfiero.`
+      : `Hola! Soy ${name}. Quiero consultar por:\n${lines}\nTotal: ${fmt(cartTotal())}`;
+    cart = [];
+    updateCartBadge();
+    closeCart();
+    toast(status === "confirmada" ? "¡Reservado! Se abre WhatsApp para avisar." : "Guardado como borrador");
+    window.open(waLink(msg), "_blank");
   }catch(err){
     console.error(err);
     toast("No se pudo guardar. Revisá tu conexión.");
@@ -291,6 +317,89 @@ async function setVariantReserved(productId, variantId, reserved){
   if(!prod) return;
   const newVariants = prod.variants.map(v => v.id === variantId ? { ...v, reserved } : v);
   await updateDoc(doc(db, "products", productId), { variants: newVariants });
+}
+
+/* ---------- Carrito ---------- */
+function openCart(){
+  renderCart();
+  $("#overlay-cart").classList.add("show");
+}
+function closeCart(){
+  $("#overlay-cart").classList.remove("show");
+}
+function renderCart(){
+  const wrap = $("#sheet-cart");
+  if(cart.length === 0){
+    wrap.innerHTML = `
+      <div class="drag"></div>
+      <h2>Tu carrito</h2>
+      <div class="empty-state" style="padding:30px 0;">
+        <div class="glyph">🛒</div>
+        <div>Todavía no agregaste productos.</div>
+      </div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="drag"></div>
+    <h2>Tu carrito</h2>
+    <div id="cart-items"></div>
+    <div class="cart-total-row">
+      <span class="label">Total</span>
+      <span class="amount">${fmt(cartTotal())}</span>
+    </div>
+    <div class="field">
+      <label>Tu nombre</label>
+      <input id="cart-name" type="text" placeholder="Nombre y apellido" value="${cartName}">
+    </div>
+    ${mpAlias ? `
+    <div class="mp-info">
+      <span>Transferí a este alias de Mercado Pago:</span>
+      <strong>${mpAlias}</strong>
+    </div>` : `
+    <div class="alert-nostock">⚠ La dueña todavía no cargó su alias de Mercado Pago</div>
+    `}
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-cart-borrador">Guardar borrador</button>
+      <button class="btn btn-primary" id="btn-cart-reservar">Reservar todo</button>
+    </div>
+  `;
+  const itemsWrap = $("#cart-items");
+  cart.forEach((item, idx) => {
+    const row = document.createElement("div");
+    row.className = "cart-item";
+    row.innerHTML = `
+      <img src="${item.img}" alt="">
+      <div class="meta">
+        <div class="t">${item.productTitle}</div>
+        <div class="v">${item.variantLabel}</div>
+        <div class="sub">${fmt(item.price)} × ${item.qty} = ${fmt(item.price*item.qty)}</div>
+      </div>
+      <div class="cart-qty">
+        <button type="button" data-minus="${idx}">−</button>
+        <span>${item.qty}</span>
+        <button type="button" data-plus="${idx}">+</button>
+      </div>
+      <button type="button" class="cart-remove" data-remove="${idx}">✕</button>
+    `;
+    itemsWrap.appendChild(row);
+  });
+  itemsWrap.querySelectorAll('[data-minus]').forEach(b => b.onclick = () => {
+    const i = Number(b.dataset.minus);
+    if(cart[i].qty > 1){ cart[i].qty--; } else { cart.splice(i,1); }
+    updateCartBadge(); renderCart();
+  });
+  itemsWrap.querySelectorAll('[data-plus]').forEach(b => b.onclick = () => {
+    const i = Number(b.dataset.plus);
+    cart[i].qty++;
+    updateCartBadge(); renderCart();
+  });
+  itemsWrap.querySelectorAll('[data-remove]').forEach(b => b.onclick = () => {
+    cart.splice(Number(b.dataset.remove), 1);
+    updateCartBadge(); renderCart();
+  });
+  $("#cart-name").oninput = e => cartName = e.target.value;
+  $("#btn-cart-borrador").onclick = () => checkoutCart("borrador");
+  $("#btn-cart-reservar").onclick = () => checkoutCart("confirmada");
 }
 
 /* ---------- Admin: acceso por PIN (guardado en Firestore, compartido) ---------- */
@@ -430,12 +539,17 @@ function renderAdminReservas(){
   reservas.forEach(r => {
     const card = document.createElement("div");
     card.className = "res-card";
+    const itemsHtml = r.items
+      ? r.items.map(i => `${i.productTitle} — ${i.variantLabel} × ${i.qty}`).join("<br>")
+      : `${r.productTitle} — ${r.variantLabel} × ${r.qty}`;
+    const totalHtml = r.total ? `<div class="detail" style="font-weight:600;color:var(--rust)">Total: ${fmt(r.total)}</div>` : "";
     card.innerHTML = `
       <div class="top-row">
         <span class="who">${r.name}</span>
         <span class="status ${r.status}">${r.status}</span>
       </div>
-      <div class="detail">${r.productTitle} — ${r.variantLabel} × ${r.qty}</div>
+      <div class="detail">${itemsHtml}</div>
+      ${totalHtml}
       <div class="actions">
         ${r.status === "borrador" ? `<button data-confirm="${r.id}">Confirmar</button>` : ""}
         <button data-del="${r.id}">Eliminar</button>
@@ -446,7 +560,10 @@ function renderAdminReservas(){
   el.querySelectorAll('[data-confirm]').forEach(b => b.onclick = async () => {
     const r = reservas.find(x => x.id === b.dataset.confirm);
     await updateDoc(doc(db, "reservas", r.id), { status: "confirmada" });
-    await setVariantReserved(r.productId, r.variantId, true);
+    const items = r.items || [{ productId: r.productId, variantId: r.variantId }];
+    for(const item of items){
+      await setVariantReserved(item.productId, item.variantId, true);
+    }
     toast("Reserva confirmada");
   });
   el.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
@@ -491,5 +608,7 @@ async function createProductFromForm(){
 seedIfEmpty();
 bootstrapConfig();
 $("#btn-admin").onclick = openAdmin;
+$("#btn-cart").onclick = openCart;
 $("#overlay-product").onclick = e => { if(e.target.id === "overlay-product") closeProductSheet(); };
 $("#overlay-admin").onclick = e => { if(e.target.id === "overlay-admin") closeAdmin(); };
+$("#overlay-cart").onclick = e => { if(e.target.id === "overlay-cart") closeCart(); };
