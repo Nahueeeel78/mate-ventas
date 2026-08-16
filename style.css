@@ -60,6 +60,7 @@ header.top .sub{font-size:.68rem;color:var(--gold);font-family:'IBM Plex Mono',m
   border-radius:12px;padding:8px 10px;font-size:.85rem;cursor:pointer;position:relative;
 }
 .icon-btn:active{transform:scale(.96);}
+.header-actions{display:flex;flex-direction:column;gap:6px;align-items:stretch;}
 .cart-badge{
   position:absolute;top:-6px;right:-6px;background:var(--rust);color:#fff;
   font-family:'IBM Plex Mono',monospace;font-size:.62rem;font-weight:600;
@@ -263,3 +264,24 @@ footer b{color:var(--green-deep);}
 @media (min-width:520px){
   .grid{grid-template-columns:1fr 1fr 1fr;}
 }
+
+/* ---------- WhatsApp flotante ---------- */
+.wa-float{
+  position:fixed;right:18px;bottom:22px;z-index:80;
+  width:56px;height:56px;border-radius:50%;
+  background:#25D366;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 16px rgba(0,0,0,.25);
+  text-decoration:none;
+}
+.wa-float-icon{font-size:1.6rem;line-height:1;position:relative;z-index:2;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2));}
+.wa-float-pulse{
+  position:absolute;inset:0;border-radius:50%;background:#25D366;
+  animation:wa-pulse 2.2s ease-out infinite;
+}
+@keyframes wa-pulse{
+  0%{ transform:scale(1); opacity:.55; }
+  70%{ transform:scale(1.9); opacity:0; }
+  100%{ transform:scale(1.9); opacity:0; }
+}
+.wa-float:active{ transform:scale(.94); }

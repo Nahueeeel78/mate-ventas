@@ -625,3 +625,7 @@ $$(".view-btn").forEach(b => {
   b.classList.toggle("active", b.dataset.view === viewMode);
   b.onclick = () => setViewMode(b.dataset.view);
 });
+$("#btn-wa-float").onclick = e => {
+  e.preventDefault();
+  window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
+};

@@ -27,8 +27,10 @@
         <div class="sub">Catálogo de ventas</div>
       </div>
     </div>
-    <button class="icon-btn" id="btn-cart">🛒<span id="cart-badge" class="cart-badge" style="display:none">0</span></button>
-    <button class="icon-btn" id="btn-admin">⚙ Panel</button>
+    <div class="header-actions">
+      <button class="icon-btn" id="btn-admin">⚙ Panel</button>
+      <button class="icon-btn" id="btn-cart">🛒<span id="cart-badge" class="cart-badge" style="display:none">0</span></button>
+    </div>
   </div>
   <div class="tabs" id="tabs"></div>
 </header>
@@ -61,6 +63,12 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- WhatsApp flotante: consulta directa a la dueña -->
+<a href="#" id="btn-wa-float" class="wa-float" title="Escribir por WhatsApp" aria-label="Escribir por WhatsApp">
+  <span class="wa-float-pulse"></span>
+  <span class="wa-float-icon">📲</span>
+</a>
 
 <script src="data.js"></script>
 <script type="module" src="app.js"></script>
