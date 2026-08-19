@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bitter:wght@500;700;900&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bitter:wght@500;700;900&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&family=Playfair+Display:wght@700;900&family=Cinzel+Decorative:wght@700&display=swap');
 
 :root{
   --cream:#F7F3EA;
@@ -11,25 +11,84 @@
   --ink:#23261F;
   --ink-soft:#5b5c53;
   --radius:18px;
+  --radius-btn:12px;
   --shadow:0 6px 20px rgba(35,62,48,0.10);
+  --header-font:'Bitter',serif;
+  --card-border:none;
+  --info-border:1.5px dashed var(--gold);
+  --bg-pattern:none;
+  --sheet-top-radius:22px;
 }
 
-/* ---------- Temas alternativos ---------- */
+/* ---------- Temas alternativos: cada uno cambia colores, formas, tipografía y textura ---------- */
+
+/* Elegante — esmaltado vintage: esquinas rectas, borde fino dorado, sin sombra, mayúsculas ajustadas */
 body.theme-terracota{
   --cream:#FBF1EA; --paper:#FFFBF8; --green-deep:#7A3626; --green-mid:#B0543A;
-  --green-line:#eeccb8; --rust:#C0453A; --gold:#E0A45C; --ink:#2b201b; --ink-soft:#7a6a5f;
+  --green-line:#eeccb8; --rust:#C0453A; --gold:#B4823E; --ink:#2b201b; --ink-soft:#7a6a5f;
+  --radius:6px; --radius-btn:6px; --sheet-top-radius:8px;
+  --shadow:none; --card-border:1px solid var(--gold);
+  --header-font:'Bitter',serif;
+  --info-border:1px solid var(--gold);
+  --bg-pattern: repeating-linear-gradient(135deg, rgba(180,130,62,0.05) 0px, rgba(180,130,62,0.05) 2px, transparent 2px, transparent 14px);
 }
+
+/* Moderno — burbujas coloridas: todo bien redondeado, sombra de color, sans-serif */
 body.theme-celeste{
-  --cream:#EEF5F7; --paper:#FBFEFF; --green-deep:#1F4A5C; --green-mid:#3E7A91;
-  --green-line:#c7dde3; --rust:#D0674A; --gold:#8FBFCB; --ink:#1c2a2e; --ink-soft:#5c6f74;
+  --cream:#EEF5F7; --paper:#FFFFFF; --green-deep:#1F4A5C; --green-mid:#3E7A91;
+  --green-line:#c7dde3; --rust:#D0674A; --gold:#3E7A91; --ink:#1c2a2e; --ink-soft:#5c6f74;
+  --radius:26px; --radius-btn:20px; --sheet-top-radius:28px;
+  --shadow:0 10px 22px rgba(31,74,92,0.18); --card-border:none;
+  --header-font:'Work Sans',sans-serif;
+  --info-border:2px solid var(--gold);
+  --bg-pattern:none;
 }
+
+/* Noche — modo oscuro con resplandor dorado, tipografía mono */
 body.theme-noche{
-  --cream:#20242A; --paper:#2A2F37; --green-deep:#C9A227; --green-mid:#7FA98E;
-  --green-line:#3d434c; --rust:#E0705A; --gold:#C9A227; --ink:#F1EFE9; --ink-soft:#a8aeb6;
+  --cream:#20242A; --paper:#2A2F37; --green-deep:#E4C55A; --green-mid:#7FA98E;
+  --green-line:#3d434c; --rust:#E0705A; --gold:#E4C55A; --ink:#F1EFE9; --ink-soft:#a8aeb6;
+  --radius:14px; --radius-btn:12px; --sheet-top-radius:18px;
+  --shadow:0 0 0 1px rgba(228,197,90,0.15), 0 8px 24px rgba(0,0,0,0.5); --card-border:1px solid rgba(228,197,90,0.25);
+  --header-font:'IBM Plex Mono',monospace;
+  --info-border:1.5px solid var(--gold);
+  --bg-pattern:none;
 }
+
+/* Rústico — enlozado de campo: textura punteada, bordes gruesos, sello marcado */
 body.theme-salvia{
   --cream:#F1F3EC; --paper:#FBFCF8; --green-deep:#4B5D3A; --green-mid:#7C9464;
-  --green-line:#d9dfcb; --rust:#B5734B; --gold:#C9A227; --ink:#262a20; --ink-soft:#6b7060;
+  --green-line:#c9d1b6; --rust:#B5734B; --gold:#8C6B2E; --ink:#262a20; --ink-soft:#6b7060;
+  --radius:10px; --radius-btn:10px; --sheet-top-radius:14px;
+  --shadow:0 4px 0 var(--green-line); --card-border:2px solid var(--green-deep);
+  --header-font:'Bitter',serif;
+  --info-border:2px dashed var(--rust);
+  --bg-pattern: radial-gradient(rgba(75,93,58,0.10) 1.2px, transparent 1.2px);
+  --bg-pattern-size:16px 16px;
+}
+
+/* Lujo Negro & Oro — elegante, serif refinado, brillo dorado sobre negro */
+body.theme-lujo{
+  --cream:#0b0b0c; --paper:#17140f; --green-deep:#c9a227; --green-mid:#2a2318;
+  --green-line:#3a3020; --rust:#d9a441; --gold:#f0dca0; --ink:#f4ead9; --ink-soft:#a9906a;
+  --radius:4px; --radius-btn:4px; --sheet-top-radius:14px;
+  --shadow:0 0 0 1px rgba(212,175,55,0.15), 0 8px 24px rgba(0,0,0,0.6);
+  --card-border:1px solid rgba(212,175,55,0.35);
+  --header-font:'Playfair Display',serif;
+  --info-border:1px solid var(--gold);
+  --bg-pattern: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.07), transparent 60%);
+}
+
+/* Gótico / Halloween — violeta oscuro, niebla, serif ornamental */
+body.theme-gotico{
+  --cream:#120817; --paper:#1c0e26; --green-deep:#c993ff; --green-mid:#5a2a73;
+  --green-line:#3a1f4a; --rust:#ff6a1a; --gold:#7cff5a; --ink:#e5d9ee; --ink-soft:#a98fc0;
+  --radius:8px; --radius-btn:8px; --sheet-top-radius:16px;
+  --shadow:0 0 14px rgba(140,43,217,0.28);
+  --card-border:1px solid #5a2a73;
+  --header-font:'Cinzel Decorative',serif;
+  --info-border:1.5px solid var(--gold);
+  --bg-pattern: radial-gradient(circle at 30% 10%, rgba(140,43,217,0.14), transparent 60%);
 }
 
 *{box-sizing:border-box;}
@@ -37,13 +96,15 @@ html{font-size:18.5px;}
 html,body{margin:0;padding:0;}
 body{
   background:var(--cream);
+  background-image:var(--bg-pattern);
+  background-size:var(--bg-pattern-size, auto);
   color:var(--ink);
   font-family:'Work Sans',sans-serif;
   -webkit-font-smoothing:antialiased;
   min-height:100vh;
   transition:background-color .4s ease, color .4s ease;
 }
-h1,h2,h3,.brand{font-family:'Bitter',serif;}
+h1,h2,h3,.brand{font-family:var(--header-font);transition:font-family .1s;}
 .mono{font-family:'IBM Plex Mono',monospace;}
 button{font-family:inherit;}
 img{max-width:100%;display:block;}
@@ -54,20 +115,49 @@ header.top, .card, .btn, .tab, .icon-btn, footer, .sheet, .mp-info, footer, .emp
   transition:background-color .4s ease, color .4s ease, border-color .4s ease;
 }
 
-/* ---------- Splash ---------- */
+/* ---------- Splash: efecto tubo de neón ---------- */
 #splash{
   position:fixed;inset:0;z-index:100;
-  background:var(--green-deep);
+  background:#101613;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:18px;
   transition:opacity .6s ease, visibility .6s ease;
 }
 #splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
-#splash img{width:96px;height:96px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35));
-  animation:pop .7s cubic-bezier(.2,1.4,.4,1);}
+#splash .neon-frame{
+  position:relative;width:132px;height:132px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+#splash .neon-frame::before{
+  content:"";position:absolute;inset:-6px;border-radius:50%;
+  border:3px solid #5CFFB1;
+  box-shadow:0 0 6px #5CFFB1,0 0 18px #5CFFB1,inset 0 0 10px #5CFFB1;
+  opacity:0;
+  animation:tubeOn 1.4s ease-out .2s forwards;
+}
+@keyframes tubeOn{
+  0%{opacity:0;transform:scale(.85);}
+  40%{opacity:1;}
+  55%{opacity:.4;}
+  70%{opacity:1;}
+  100%{opacity:1;transform:scale(1);}
+}
+#splash .splash-logo{
+  width:120px;height:120px;border-radius:50%;object-fit:cover;position:relative;z-index:2;
+  animation:pop .7s cubic-bezier(.2,1.4,.4,1);
+}
 @keyframes pop{from{transform:scale(.6);opacity:0;}to{transform:scale(1);opacity:1;}}
-#splash .brand{color:var(--cream);font-size:1.5rem;font-weight:700;letter-spacing:.02em;}
-#splash .tagline{color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;}
+#splash .splash-brand{
+  color:#eafff5;font-size:1.5rem;font-weight:700;letter-spacing:.02em;
+  opacity:0;animation:neonFlicker 1.6s ease-in-out .9s forwards;
+}
+@keyframes neonFlicker{
+  0%{opacity:0;}
+  4%{opacity:1;} 6%{opacity:.3;} 8%{opacity:1;} 10%{opacity:.4;} 12%{opacity:1;}
+  30%{opacity:1;} 32%{opacity:.5;} 34%{opacity:1;}
+  100%{opacity:1;}
+}
+#splash .tagline{color:#9fe8c4;font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;}
 
 /* ---------- Header ---------- */
 header.top{
@@ -86,9 +176,23 @@ header.top .sub{font-size:.68rem;color:var(--gold);font-family:'IBM Plex Mono',m
   border-radius:12px;padding:8px 10px;font-size:.85rem;cursor:pointer;position:relative;
 }
 .icon-btn:active{transform:scale(.96);}
-.header-actions{display:flex;flex-direction:column;gap:6px;align-items:stretch;}
+.header-actions{display:flex;flex-direction:row;gap:6px;align-items:stretch;}
 .header-actions .row-pair{display:flex;gap:6px;}
 .header-actions .row-pair .icon-btn{flex:1;}
+.menu-wrap{position:relative;}
+.dropdown-menu{
+  display:none;flex-direction:column;position:absolute;top:calc(100% + 6px);right:0;
+  min-width:170px;background:var(--paper);border-radius:12px;box-shadow:var(--shadow);
+  overflow:hidden;z-index:30;border:1px solid var(--green-line);
+}
+.dropdown-menu.show{display:flex;animation:dropdown-in .18s ease;}
+@keyframes dropdown-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.dropdown-item{
+  padding:12px 14px;text-align:left;border:none;background:none;font-size:.85rem;
+  color:var(--ink);cursor:pointer;font-family:inherit;
+}
+.dropdown-item:active{background:var(--cream);}
+.dropdown-item + .dropdown-item{border-top:1px solid var(--green-line);}
 .cart-badge{
   position:absolute;top:-6px;right:-6px;background:var(--rust);color:#fff;
   font-family:'IBM Plex Mono',monospace;font-size:.62rem;font-weight:600;
@@ -117,6 +221,7 @@ main{padding:14px 16px 90px;max-width:700px;margin:0 auto;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .card{
   background:var(--paper);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);
+  border:var(--card-border);
   position:relative;display:flex;flex-direction:column;
 }
 .card .thumb{position:relative;aspect-ratio:1/1;overflow:hidden;background:#eee;}
@@ -177,7 +282,8 @@ main{padding:14px 16px 90px;max-width:700px;margin:0 auto;}
 }
 .overlay.show{opacity:1;pointer-events:auto;}
 .sheet{
-  background:var(--paper);width:100%;max-width:640px;border-radius:22px 22px 0 0;
+  background:var(--paper);width:100%;max-width:700px;
+  border-radius:var(--sheet-top-radius) var(--sheet-top-radius) 0 0;
   max-height:90vh;overflow-y:auto;padding:16px 18px 24px;
   transform:translateY(30px);transition:transform .25s ease;
 }
@@ -192,23 +298,23 @@ main{padding:14px 16px 90px;max-width:700px;margin:0 auto;}
 .field{margin-bottom:12px;}
 .field label{display:block;font-size:.75rem;font-weight:600;color:var(--green-deep);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em;}
 .field input,.field select,.field textarea{
-  width:100%;border:1px solid var(--green-line);border-radius:10px;padding:10px 12px;
+  width:100%;border:1px solid var(--green-line);border-radius:var(--radius-btn);padding:10px 12px;
   font-size:.92rem;font-family:inherit;background:var(--cream);color:var(--ink);
 }
 .field select:disabled option:disabled{color:#bbb;}
 .variant-grid{display:flex;flex-wrap:wrap;gap:8px;}
 .variant-chip{
-  border:1.5px solid var(--green-line);border-radius:10px;padding:7px 10px;font-size:.78rem;
+  border:1.5px solid var(--green-line);border-radius:var(--radius-btn);padding:7px 10px;font-size:.78rem;
   cursor:pointer;background:var(--paper);position:relative;
 }
 .variant-chip.selected{border-color:var(--green-deep);background:var(--green-deep);color:var(--cream);}
 .variant-chip.reserved{opacity:.45;text-decoration:line-through;cursor:not-allowed;}
 .qty-row{display:flex;align-items:center;gap:12px;}
-.qty-row button{width:36px;height:36px;border-radius:10px;border:1px solid var(--green-line);background:var(--paper);font-size:1.1rem;}
+.qty-row button{width:36px;height:36px;border-radius:var(--radius-btn);border:1px solid var(--green-line);background:var(--paper);font-size:1.1rem;}
 .qty-row span{font-family:'IBM Plex Mono',monospace;font-size:1rem;min-width:22px;text-align:center;}
 
 .btn{
-  display:block;width:100%;text-align:center;padding:13px;border-radius:12px;border:none;
+  display:block;width:100%;text-align:center;padding:13px;border-radius:var(--radius-btn);border:none;
   font-weight:600;font-size:.92rem;cursor:pointer;
 }
 .btn-primary{background:var(--green-deep);color:var(--cream);}
@@ -219,7 +325,7 @@ main{padding:14px 16px 90px;max-width:700px;margin:0 auto;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
 
 .mp-info{
-  background:var(--cream);border:1.5px dashed var(--gold);border-radius:10px;
+  background:var(--cream);border:var(--info-border);border-radius:var(--radius-btn);
   padding:10px 12px;margin-bottom:4px;display:flex;flex-direction:column;gap:3px;
 }
 .mp-info span{font-size:.76rem;color:var(--ink-soft);}
@@ -317,8 +423,9 @@ footer b{color:var(--green-deep);}
   0%{ transform:scale(1); } 40%{ transform:scale(1.05); } 100%{ transform:scale(1); }
 }
 .theme-swatches{display:flex;gap:6px;}
-.theme-swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.1);}
+.theme-swatch{width:24px;height:24px;border:1px solid rgba(0,0,0,.1);}
 .theme-name{font-size:.85rem;font-weight:600;color:var(--ink);}
+.theme-vibe{font-size:.7rem;color:var(--ink-soft);}
 
 /* ---------- WhatsApp flotante ---------- */
 .wa-float{

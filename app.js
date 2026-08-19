@@ -32,7 +32,7 @@ let waNumber = "+54 9 11 7036-1019";
 let cart = [];
 let cartName = "";
 let viewMode = localStorage.getItem("mate_view_mode") || "grid";
-let theme = localStorage.getItem("mate_theme") || "clasico";
+let theme = localStorage.getItem("mate_theme") || "lujo";
 let buyerId = localStorage.getItem("mate_buyer_id") || (() => {
   const id = "b" + Date.now() + Math.random().toString(36).slice(2,8);
   localStorage.setItem("mate_buyer_id", id);
@@ -43,11 +43,13 @@ let buyerLastName = localStorage.getItem("mate_buyer_lastname") || "";
 let cartReceiptFile = null;
 
 const THEMES = [
-  { id: "clasico",   name: "Clásico",   colors: ["#233E30", "#C9A227", "#F7F3EA"] },
-  { id: "terracota", name: "Terracota", colors: ["#7A3626", "#E0A45C", "#FBF1EA"] },
-  { id: "celeste",   name: "Celeste",   colors: ["#1F4A5C", "#8FBFCB", "#EEF5F7"] },
-  { id: "noche",     name: "Noche",     colors: ["#20242A", "#C9A227", "#7FA98E"] },
-  { id: "salvia",    name: "Salvia",    colors: ["#4B5D3A", "#C9A227", "#F1F3EC"] },
+  { id: "lujo",      name: "Lujo Negro & Oro", vibe: "Serif elegante, dorado",  colors: ["#0b0b0c", "#c9a227", "#f0dca0"], radius: "4px" },
+  { id: "gotico",    name: "Gótico / Halloween", vibe: "Violeta oscuro, niebla", colors: ["#120817", "#c993ff", "#7cff5a"], radius: "8px" },
+  { id: "clasico",   name: "Clásico",   vibe: "Redondeado, cálido",      colors: ["#233E30", "#C9A227", "#F7F3EA"], radius: "16px" },
+  { id: "terracota", name: "Elegante",  vibe: "Recto, esmaltado",        colors: ["#7A3626", "#B4823E", "#FBF1EA"], radius: "4px" },
+  { id: "celeste",   name: "Moderno",   vibe: "Burbujas, sans-serif",    colors: ["#1F4A5C", "#3E7A91", "#EEF5F7"], radius: "22px" },
+  { id: "noche",     name: "Noche",     vibe: "Oscuro, resplandor",      colors: ["#20242A", "#E4C55A", "#7FA98E"], radius: "12px" },
+  { id: "salvia",    name: "Rústico",   vibe: "Textura, sello grueso",   colors: ["#4B5D3A", "#8C6B2E", "#F1F3EC"], radius: "8px" },
 ];
 
 /* ---------- Utilidades ---------- */
@@ -104,7 +106,7 @@ function resizeImageFile(file, maxSize = 900, quality = 0.75){
 
 /* ---------- Splash ---------- */
 window.addEventListener("load", () => {
-  setTimeout(() => { $("#splash").classList.add("hide"); }, 1400);
+  setTimeout(() => { $("#splash").classList.add("hide"); }, 2600);
 });
 
 /* ---------- Seed inicial (solo si la colección está vacía) ---------- */
@@ -234,9 +236,10 @@ function renderThemeSheet(){
     card.className = "theme-card" + (theme === t.id ? " selected" : "");
     card.innerHTML = `
       <div class="theme-swatches">
-        ${t.colors.map(c => `<span class="theme-swatch" style="background:${c}"></span>`).join("")}
+        ${t.colors.map(c => `<span class="theme-swatch" style="background:${c};border-radius:${t.radius}"></span>`).join("")}
       </div>
       <span class="theme-name">${t.name}</span>
+      <span class="theme-vibe">${t.vibe}</span>
     `;
     card.onclick = () => {
       applyTheme(t.id);
@@ -573,6 +576,30 @@ async function openAdmin(){
 }
 function closeAdmin(){ $("#overlay-admin").classList.remove("show"); adminOpen = false; }
 
+async function resetCatalogFromSeed(){
+  if(!confirm(`Esto va a borrar los ${products.length} productos actuales y cargar los ${SEED_PRODUCTS.length} de data.js. Las reservas no se tocan. ¿Confirmás?`)) return;
+  if(!confirm("¿Estás segura/o? Esta acción no se puede deshacer.")) return;
+  const btn = $("#admin-reset-catalog");
+  if(btn){ btn.disabled = true; btn.textContent = "Reemplazando..."; }
+  try{
+    for(const p of products){
+      await deleteDoc(doc(db, "products", p.id));
+    }
+    const batch = writeBatch(db);
+    SEED_PRODUCTS.forEach(p => {
+      const { id, ...rest } = p;
+      batch.set(doc(db, "products", id), rest);
+    });
+    await batch.commit();
+    toast("Catálogo reemplazado");
+  }catch(err){
+    console.error(err);
+    toast("Algo falló. Revisá tu conexión e intentá de nuevo.");
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = "🔄 Reemplazar catálogo por el de data.js"; }
+  }
+}
+
 function renderAdmin(){
   const wrap = $("#sheet-admin");
   wrap.innerHTML = `
@@ -617,11 +644,18 @@ function renderAdmin(){
     </div>
 
     <div class="admin-section">
+      <h3>Zona de riesgo</h3>
+      <div class="field"><label>Esto borra TODOS los productos actuales y los reemplaza por los que están cargados en data.js. Las reservas no se tocan.</label></div>
+      <button class="btn btn-ghost" id="admin-reset-catalog" style="border:1.5px solid var(--rust);">🔄 Reemplazar catálogo por el de data.js</button>
+    </div>
+
+    <div class="admin-section">
       <h3>Reservas (${reservas.length})</h3>
       <div id="admin-reservas"></div>
     </div>
   `;
   $("#np-save").onclick = createProductFromForm;
+  $("#admin-reset-catalog").onclick = resetCatalogFromSeed;
   $("#admin-mpalias-save").onclick = async () => {
     const val = $("#admin-mpalias-input").value.trim();
     try{
@@ -759,10 +793,17 @@ async function createProductFromForm(){
 seedIfEmpty();
 bootstrapConfig();
 applyTheme(theme);
-$("#btn-admin").onclick = openAdmin;
 $("#btn-cart").onclick = openCart;
-$("#btn-theme").onclick = openThemeSheet;
-$("#btn-profile").onclick = openProfile;
+$("#btn-ajustes").onclick = e => {
+  e.stopPropagation();
+  $("#dropdown-menu").classList.toggle("show");
+};
+$("#menu-profile").onclick = () => { $("#dropdown-menu").classList.remove("show"); openProfile(); };
+$("#menu-theme").onclick = () => { $("#dropdown-menu").classList.remove("show"); openThemeSheet(); };
+$("#menu-admin").onclick = () => { $("#dropdown-menu").classList.remove("show"); openAdmin(); };
+document.addEventListener("click", e => {
+  if(!e.target.closest(".menu-wrap")) $("#dropdown-menu").classList.remove("show");
+});
 $("#overlay-product").onclick = e => { if(e.target.id === "overlay-product") closeProductSheet(); };
 $("#overlay-admin").onclick = e => { if(e.target.id === "overlay-admin") closeAdmin(); };
 $("#overlay-cart").onclick = e => { if(e.target.id === "overlay-cart") closeCart(); };
@@ -788,5 +829,5 @@ if(urlParams.get("admin") === "1"){
   localStorage.setItem(ADMIN_REVEAL_KEY, "1");
 }
 if(localStorage.getItem(ADMIN_REVEAL_KEY) === "1"){
-  $("#btn-admin").style.display = "";
+  $("#menu-admin").style.display = "";
 }

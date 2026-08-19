@@ -13,8 +13,8 @@
 
 <!-- Splash -->
 <div id="splash">
-  <img src="icons/icon-512.png" alt="Logo">
-  <div class="brand">Mate & Co.</div>
+  <div class="neon-frame"><img src="icons/icon-512.png" alt="Logo" class="splash-logo"></div>
+  <div class="brand splash-brand">Mate & Co.</div>
   <div class="tagline">Ventas · Reservas</div>
 </div>
 
@@ -28,13 +28,14 @@
       </div>
     </div>
     <div class="header-actions">
-      <div class="row-pair">
-        <button class="icon-btn" id="btn-admin" style="display:none">⚙ Panel</button>
-        <button class="icon-btn" id="btn-cart">🛒<span id="cart-badge" class="cart-badge" style="display:none">0</span></button>
-      </div>
-      <div class="row-pair">
-        <button class="icon-btn" id="btn-theme" title="Elegir tema">🎨 Temas</button>
-        <button class="icon-btn" id="btn-profile" title="Mi perfil">👤 Perfil</button>
+      <button class="icon-btn" id="btn-cart">🛒<span id="cart-badge" class="cart-badge" style="display:none">0</span></button>
+      <div class="menu-wrap">
+        <button class="icon-btn" id="btn-ajustes" style="width:100%">⚙ Ajustes</button>
+        <div class="dropdown-menu" id="dropdown-menu">
+          <button class="dropdown-item" id="menu-profile">👤 Perfil</button>
+          <button class="dropdown-item" id="menu-theme">🎨 Temas</button>
+          <button class="dropdown-item" id="menu-admin" style="display:none">⚙ Panel</button>
+        </div>
       </div>
     </div>
   </div>
