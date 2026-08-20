@@ -30,7 +30,8 @@ let adminOpen = false;
 let mpAlias = "";
 let waNumber = "+54 9 11 7036-1019";
 let cart = [];
-let cartName = "";
+let cartFirstName = "";
+let cartLastName = "";
 let viewMode = localStorage.getItem("mate_view_mode") || "grid";
 let theme = localStorage.getItem("mate_theme") || "lujo";
 let buyerId = localStorage.getItem("mate_buyer_id") || (() => {
@@ -319,12 +320,79 @@ function closeProductSheet(){
   $("#overlay-product").classList.remove("show");
   currentProduct = null;
 }
+/* ---------- Zoom de fotos (pellizcar para acercar, doble toque, arrastrar) ---------- */
+function openZoom(src){
+  const overlay = document.createElement("div");
+  overlay.className = "zoom-overlay";
+  overlay.innerHTML = `<button type="button" class="zoom-close" aria-label="Cerrar">✕</button><img class="zoom-img" src="${src}" alt="">`;
+  document.body.appendChild(overlay);
+  const img = overlay.querySelector(".zoom-img");
+
+  let scale = 1, x = 0, y = 0;
+  const pointers = new Map();
+  let startDist = 0, startScale = 1, panStart = null, lastTap = 0;
+
+  function apply(){ img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`; }
+  function close(){ overlay.remove(); }
+
+  overlay.querySelector(".zoom-close").onclick = close;
+  overlay.addEventListener("click", e => { if(e.target === overlay && scale <= 1) close(); });
+
+  img.addEventListener("pointerdown", e => {
+    img.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      startDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      startScale = scale;
+    } else if(pointers.size === 1){
+      panStart = { x: e.clientX - x, y: e.clientY - y };
+      const now = Date.now();
+      if(now - lastTap < 300){
+        scale = scale > 1 ? 1 : 2.5;
+        if(scale === 1){ x = 0; y = 0; }
+        apply();
+      }
+      lastTap = now;
+    }
+  });
+  img.addEventListener("pointermove", e => {
+    if(!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      scale = Math.min(4, Math.max(1, startScale * (dist / startDist)));
+      apply();
+    } else if(pointers.size === 1 && scale > 1 && panStart){
+      x = e.clientX - panStart.x;
+      y = e.clientY - panStart.y;
+      apply();
+    }
+  });
+  function endPointer(e){
+    pointers.delete(e.pointerId);
+    if(pointers.size < 2) startDist = 0;
+    if(pointers.size === 0){
+      panStart = null;
+      if(scale < 1){ scale = 1; }
+      if(scale === 1){ x = 0; y = 0; }
+      apply();
+    }
+  }
+  img.addEventListener("pointerup", endPointer);
+  img.addEventListener("pointercancel", endPointer);
+}
+
 function renderProductSheet(){
   const p = currentProduct;
   const sinStock = isSinStock(p);
   $("#sheet-product").innerHTML = `
     <div class="drag"></div>
-    <img class="modal-img" src="${p.img}" alt="${p.title}">
+    <div class="modal-img-wrap" id="modal-img-wrap">
+      <img class="modal-img" src="${p.img}" alt="${p.title}">
+      <span class="zoom-hint">🔍 Tocá para ampliar</span>
+    </div>
     <h2>${p.title}</h2>
     <div class="price-row"><span class="price">${fmt(p.price)}</span>${p.kit ? '<span class="kit-tag" style="position:static">Kit</span>' : ''}</div>
     <div class="desc">${p.desc || ""}</div>
@@ -348,6 +416,7 @@ function renderProductSheet(){
     `}
   `;
   if(p.variants.length > 1) renderVariantChips();
+  $("#modal-img-wrap").onclick = () => openZoom(p.img);
   if(!sinStock){
     let qty = 1;
     const qtyVal = $("#qty-val");
@@ -386,12 +455,18 @@ function renderVariantChips(){
   });
 }
 async function checkoutCart(status){
-  const name = $("#cart-name") ? $("#cart-name").value.trim() : "";
-  if(!name){ toast("Completá tu nombre"); return; }
+  const firstName = $("#cart-firstname") ? $("#cart-firstname").value.trim() : "";
+  const lastName = $("#cart-lastname") ? $("#cart-lastname").value.trim() : "";
+  if(!firstName || !lastName){ toast("Completá nombre y apellido"); return; }
+  const name = `${firstName} ${lastName}`;
   if(cart.length === 0){ toast("El carrito está vacío"); return; }
   if(status === "confirmada" && !cartReceiptFile){
     toast("Subí el comprobante de la transferencia para reservar");
     return;
+  }
+  if(status === "confirmada"){
+    const resumen = cart.map(i => `${i.productTitle} (${i.variantLabel}) x${i.qty}`).join("\n");
+    if(!confirm(`Confirmás la reserva de:\n${resumen}\n\nTotal: ${fmt(cartTotal())}\n\nEsto aparta el stock ya mismo. ¿Seguimos?`)) return;
   }
 
   // Revalidar stock en vivo antes de confirmar (por si alguien reservó mientras tanto)
@@ -416,6 +491,7 @@ async function checkoutCart(status){
   if(btnConfirm) btnConfirm.disabled = true;
   if(btnDraft) btnDraft.disabled = true;
 
+  const receiptFileForShare = cartReceiptFile;
   let receiptData = null;
   if(cartReceiptFile){
     try{ receiptData = await resizeImageFile(cartReceiptFile, 1000, 0.7); }
@@ -428,7 +504,7 @@ async function checkoutCart(status){
     qty: i.qty, price: i.price
   }));
   const reserva = {
-    name, items, total: cartTotal(), status,
+    name, firstName, lastName, items, total: cartTotal(), status,
     buyerId, createdAt: new Date().toISOString()
   };
   if(receiptData) reserva.receipt = receiptData;
@@ -441,14 +517,19 @@ async function checkoutCart(status){
     }
     const lines = cart.map(i => `- ${i.productTitle} (${i.variantLabel}) x${i.qty} — ${fmt(i.qty*i.price)}`).join("\n");
     const msg = status === "confirmada"
-      ? `Hola! Soy ${name}. RESERVADO:\n${lines}\nTotal: ${fmt(cartTotal())}\nYa está reservado y adjunté el comprobante en la app.`
+      ? `Hola! Soy ${name}. RESERVADO:\n${lines}\nTotal: ${fmt(cartTotal())}\nTe mando el comprobante de la transferencia.`
       : `Hola! Soy ${name}. Quiero consultar por:\n${lines}\nTotal: ${fmt(cartTotal())}`;
     cart = [];
     cartReceiptFile = null;
     updateCartBadge();
     closeCart();
-    toast(status === "confirmada" ? "¡Reservado! Se abre WhatsApp para avisar." : "Guardado como borrador");
-    window.open(waLink(msg), "_blank");
+
+    if(status === "confirmada" && receiptFileForShare){
+      await sendReceiptToOwner(receiptFileForShare, msg);
+    } else {
+      toast(status === "confirmada" ? "¡Reservado! Se abre WhatsApp para avisar." : "Guardado como borrador");
+      window.open(waLink(msg), "_blank");
+    }
   }catch(err){
     console.error(err);
     toast("No se pudo guardar. Revisá tu conexión.");
@@ -456,6 +537,27 @@ async function checkoutCart(status){
     if(btnConfirm) btnConfirm.disabled = false;
     if(btnDraft) btnDraft.disabled = false;
   }
+}
+async function sendReceiptToOwner(file, msg){
+  // Si el celular lo permite, comparte la FOTO real + el mensaje directo a WhatsApp.
+  try{
+    const shareFile = new File([file], file.name || "comprobante.jpg", { type: file.type || "image/jpeg" });
+    if(navigator.canShare && navigator.canShare({ files: [shareFile] })){
+      await navigator.share({ files: [shareFile], text: msg, title: "Comprobante de reserva" });
+      toast("¡Reservado! Elegí WhatsApp en la lista para mandarle el comprobante a la dueña.");
+      return;
+    }
+  }catch(err){
+    if(err && err.name === "AbortError"){
+      toast("Reserva guardada. No se compartió el comprobante — mandaselo por WhatsApp cuando quieras.");
+      return;
+    }
+    console.error(err);
+  }
+  // Si el celular no soporta compartir archivos, abrimos WhatsApp con el texto
+  // y avisamos que hay que adjuntar la foto a mano.
+  toast("¡Reservado! Se abre WhatsApp — adjuntá ahí la foto del comprobante.");
+  window.open(waLink(msg), "_blank");
 }
 async function setVariantReserved(productId, variantId, reserved){
   const prod = products.find(p => p.id === productId);
@@ -467,7 +569,8 @@ async function setVariantReserved(productId, variantId, reserved){
 /* ---------- Carrito ---------- */
 function openCart(){
   cartReceiptFile = null;
-  if(!cartName && (buyerName || buyerLastName)) cartName = `${buyerName} ${buyerLastName}`.trim();
+  if(!cartFirstName && buyerName) cartFirstName = buyerName;
+  if(!cartLastName && buyerLastName) cartLastName = buyerLastName;
   renderCart();
   $("#overlay-cart").classList.add("show");
 }
@@ -495,8 +598,12 @@ function renderCart(){
       <span class="amount">${fmt(cartTotal())}</span>
     </div>
     <div class="field">
-      <label>Tu nombre</label>
-      <input id="cart-name" type="text" placeholder="Nombre y apellido" value="${cartName}">
+      <label>Nombre</label>
+      <input id="cart-firstname" type="text" placeholder="Nombre" value="${cartFirstName}">
+    </div>
+    <div class="field">
+      <label>Apellido</label>
+      <input id="cart-lastname" type="text" placeholder="Apellido" value="${cartLastName}">
     </div>
     ${mpAlias ? `
     <div class="mp-info">
@@ -548,7 +655,8 @@ function renderCart(){
     cart.splice(Number(b.dataset.remove), 1);
     updateCartBadge(); renderCart();
   });
-  $("#cart-name").oninput = e => cartName = e.target.value;
+  $("#cart-firstname").oninput = e => cartFirstName = e.target.value;
+  $("#cart-lastname").oninput = e => cartLastName = e.target.value;
   $("#cart-receipt").onchange = e => { cartReceiptFile = e.target.files[0] || null; };
   $("#btn-cart-borrador").onclick = () => checkoutCart("borrador");
   $("#btn-cart-reservar").onclick = () => checkoutCart("confirmada");
@@ -575,30 +683,6 @@ async function openAdmin(){
   $("#overlay-admin").classList.add("show");
 }
 function closeAdmin(){ $("#overlay-admin").classList.remove("show"); adminOpen = false; }
-
-async function resetCatalogFromSeed(){
-  if(!confirm(`Esto va a borrar los ${products.length} productos actuales y cargar los ${SEED_PRODUCTS.length} de data.js. Las reservas no se tocan. ¿Confirmás?`)) return;
-  if(!confirm("¿Estás segura/o? Esta acción no se puede deshacer.")) return;
-  const btn = $("#admin-reset-catalog");
-  if(btn){ btn.disabled = true; btn.textContent = "Reemplazando..."; }
-  try{
-    for(const p of products){
-      await deleteDoc(doc(db, "products", p.id));
-    }
-    const batch = writeBatch(db);
-    SEED_PRODUCTS.forEach(p => {
-      const { id, ...rest } = p;
-      batch.set(doc(db, "products", id), rest);
-    });
-    await batch.commit();
-    toast("Catálogo reemplazado");
-  }catch(err){
-    console.error(err);
-    toast("Algo falló. Revisá tu conexión e intentá de nuevo.");
-  }finally{
-    if(btn){ btn.disabled = false; btn.textContent = "🔄 Reemplazar catálogo por el de data.js"; }
-  }
-}
 
 function renderAdmin(){
   const wrap = $("#sheet-admin");
@@ -644,18 +728,11 @@ function renderAdmin(){
     </div>
 
     <div class="admin-section">
-      <h3>Zona de riesgo</h3>
-      <div class="field"><label>Esto borra TODOS los productos actuales y los reemplaza por los que están cargados en data.js. Las reservas no se tocan.</label></div>
-      <button class="btn btn-ghost" id="admin-reset-catalog" style="border:1.5px solid var(--rust);">🔄 Reemplazar catálogo por el de data.js</button>
-    </div>
-
-    <div class="admin-section">
       <h3>Reservas (${reservas.length})</h3>
       <div id="admin-reservas"></div>
     </div>
   `;
   $("#np-save").onclick = createProductFromForm;
-  $("#admin-reset-catalog").onclick = resetCatalogFromSeed;
   $("#admin-mpalias-save").onclick = async () => {
     const val = $("#admin-mpalias-input").value.trim();
     try{
