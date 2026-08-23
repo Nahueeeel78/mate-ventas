@@ -252,17 +252,19 @@ function renderThemeSheet(){
 }
 
 /* ---------- Perfil del comprador ---------- */
+let profileEditMode = false;
 function openProfile(){
+  profileEditMode = !(buyerName || buyerLastName); // si nunca cargó datos, arranca editando
   renderProfile();
   $("#overlay-profile").classList.add("show");
 }
 function closeProfile(){ $("#overlay-profile").classList.remove("show"); }
 function renderProfile(){
   const wrap = $("#sheet-profile");
-  const mine = reservas.filter(r => r.buyerId === buyerId);
-  wrap.innerHTML = `
-    <div class="drag"></div>
-    <h2>Mi perfil</h2>
+  const mine = reservas.filter(r => r.buyerId === buyerId)
+    .sort((a,b) => (b.createdAt||"").localeCompare(a.createdAt||""));
+
+  const profileBlock = profileEditMode ? `
     <div class="field">
       <label>Nombre</label>
       <input id="profile-name" type="text" placeholder="Nombre" value="${buyerName}">
@@ -271,8 +273,19 @@ function renderProfile(){
       <label>Apellido</label>
       <input id="profile-lastname" type="text" placeholder="Apellido" value="${buyerLastName}">
     </div>
-    <button class="btn btn-secondary" id="profile-save">Guardar datos</button>
+    <button class="btn btn-primary" id="profile-save">Guardar</button>
+  ` : `
+    <div class="profile-view">
+      <div class="profile-view-row"><span>Nombre</span><strong>${buyerName || "—"}</strong></div>
+      <div class="profile-view-row"><span>Apellido</span><strong>${buyerLastName || "—"}</strong></div>
+    </div>
+    <button class="btn btn-secondary" id="profile-edit">✏️ Editar perfil</button>
+  `;
 
+  wrap.innerHTML = `
+    <div class="drag"></div>
+    <h2>Mi perfil</h2>
+    ${profileBlock}
     <div class="admin-section" style="margin-top:18px;">
       <h3>Historial de compras (${mine.length})</h3>
       <div id="profile-history"></div>
@@ -287,6 +300,8 @@ function renderProfile(){
       card.className = "res-card";
       const itemsHtml = (r.items || []).map(i => `${i.productTitle} — ${i.variantLabel} × ${i.qty}`).join("<br>");
       const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString("es-AR") : "";
+      const paidStamp = r.status === "confirmada"
+        ? `<div class="paid-stamp">✔ Reservado y pagado</div>` : "";
       card.innerHTML = `
         <div class="top-row">
           <span class="who">${date}</span>
@@ -294,18 +309,72 @@ function renderProfile(){
         </div>
         <div class="detail">${itemsHtml}</div>
         <div class="detail" style="font-weight:600;color:var(--rust)">Total: ${fmt(r.total || 0)}</div>
-        ${r.receipt ? `<img class="receipt-thumb" src="${r.receipt}" alt="Comprobante">` : `<div class="detail">Sin comprobante</div>`}
+        <div class="receipt-wrap">
+          ${r.receipt ? `<img class="receipt-thumb" src="${r.receipt}" alt="Comprobante">` : `<div class="detail">Sin comprobante</div>`}
+          ${paidStamp}
+        </div>
+        <div class="actions">
+          <button data-copy="${r.id}">📋 Copiar</button>
+          <button data-share="${r.id}">📤 Compartir</button>
+        </div>
       `;
       hist.appendChild(card);
+      card.querySelector('[data-copy]').onclick = () => copyOrderInfo(r);
+      card.querySelector('[data-share]').onclick = () => shareOrderInfo(r);
     });
   }
-  $("#profile-save").onclick = () => {
-    buyerName = $("#profile-name").value.trim();
-    buyerLastName = $("#profile-lastname").value.trim();
-    localStorage.setItem("mate_buyer_name", buyerName);
-    localStorage.setItem("mate_buyer_lastname", buyerLastName);
-    toast("Datos guardados");
-  };
+  if(profileEditMode){
+    $("#profile-save").onclick = () => {
+      buyerName = $("#profile-name").value.trim();
+      buyerLastName = $("#profile-lastname").value.trim();
+      localStorage.setItem("mate_buyer_name", buyerName);
+      localStorage.setItem("mate_buyer_lastname", buyerLastName);
+      profileEditMode = false;
+      renderProfile();
+      toast("Datos guardados");
+    };
+  } else {
+    $("#profile-edit").onclick = () => { profileEditMode = true; renderProfile(); };
+  }
+}
+function orderInfoText(r){
+  const date = r.createdAt ? new Date(r.createdAt).toLocaleDateString("es-AR") : "";
+  const lines = (r.items || []).map(i => `- ${i.productTitle} (${i.variantLabel}) x${i.qty}`).join("\n");
+  const estado = r.status === "confirmada" ? "RESERVADO Y PAGADO" : "Borrador";
+  return `Comprobante de reserva — ${date}\nEstado: ${estado}\n${lines}\nTotal: ${fmt(r.total || 0)}`;
+}
+async function copyOrderInfo(r){
+  try{
+    await navigator.clipboard.writeText(orderInfoText(r));
+    toast("Copiado al portapapeles");
+  }catch(err){
+    console.error(err);
+    toast("No se pudo copiar");
+  }
+}
+async function shareOrderInfo(r){
+  const text = orderInfoText(r);
+  try{
+    if(r.receipt && navigator.canShare){
+      const res = await fetch(r.receipt);
+      const blob = await res.blob();
+      const file = new File([blob], "comprobante.jpg", { type: blob.type || "image/jpeg" });
+      if(navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], text, title: "Comprobante de reserva" });
+        return;
+      }
+    }
+    if(navigator.share){
+      await navigator.share({ text, title: "Comprobante de reserva" });
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    toast("Tu navegador no permite compartir — lo copié al portapapeles");
+  }catch(err){
+    if(err && err.name === "AbortError") return;
+    console.error(err);
+    toast("No se pudo compartir");
+  }
 }
 
 /* ---------- Modal producto / reserva ---------- */
@@ -891,10 +960,6 @@ $$(".view-btn").forEach(b => {
   b.onclick = () => setViewMode(b.dataset.view);
 });
 $("#btn-wa-float").onclick = e => {
-  e.preventDefault();
-  window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
-};
-$("#footer-wa").onclick = e => {
   e.preventDefault();
   window.open(waLink("Hola! Tengo una consulta sobre los productos."), "_blank");
 };

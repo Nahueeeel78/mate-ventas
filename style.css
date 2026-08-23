@@ -398,6 +398,24 @@ main{padding:14px 16px 90px;max-width:700px;margin:0 auto;}
 .status.confirmada{background:var(--green-mid);color:#fff;}
 .res-card .detail{font-size:.78rem;color:var(--ink-soft);margin-top:4px;}
 .res-card .receipt-thumb{width:56px;height:56px;object-fit:cover;border-radius:8px;margin-top:6px;border:1px solid var(--green-line);}
+.res-card .receipt-wrap{position:relative;display:inline-block;margin-top:2px;}
+.res-card .paid-stamp{
+  position:absolute;top:-6px;left:66px;white-space:nowrap;
+  border:2px solid var(--green-mid);color:var(--green-mid);
+  font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:.62rem;letter-spacing:.03em;
+  padding:3px 7px;border-radius:6px;transform:rotate(-8deg);
+  background:rgba(255,255,255,.85);text-transform:uppercase;
+}
+.res-card .actions button{font-size:.72rem;}
+
+.profile-view{background:var(--cream);border-radius:var(--radius-btn);padding:4px 12px;margin-bottom:14px;}
+.profile-view-row{
+  display:flex;justify-content:space-between;align-items:center;padding:10px 0;
+  border-bottom:1px solid var(--green-line);font-size:.85rem;
+}
+.profile-view-row:last-child{border-bottom:none;}
+.profile-view-row span{color:var(--ink-soft);text-transform:uppercase;font-size:.68rem;letter-spacing:.03em;}
+.profile-view-row strong{color:var(--ink);font-weight:600;}
 .res-card .actions{display:flex;gap:8px;margin-top:8px;}
 .res-card .actions button{flex:1;padding:7px;border-radius:8px;font-size:.72rem;border:1px solid var(--green-line);background:var(--paper);}
 
@@ -407,16 +425,6 @@ footer{
   font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;
 }
 footer b{color:var(--green-deep);}
-.social-row{
-  display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;
-}
-.social-icon{
-  width:38px;height:38px;border-radius:50%;border:1px solid var(--green-line);
-  display:flex;align-items:center;justify-content:center;color:var(--green-deep);
-  background:var(--paper);text-decoration:none;
-}
-.social-icon:active{ transform:scale(.94); }
-.social-handle{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--ink-soft);}
 
 .toast{
   position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(10px);
